@@ -1,0 +1,7 @@
+name: astrbot_plugin_dafeiyu_journal
+display_name: 大肥鱼本地聊天归档
+desc: 持久化主人私聊原文，独立于模型上下文裁剪；不宣称 QQ 送达
+version: v0.1.0
+author: dafeiyu-tools
+support_platforms:
+  - aiocqhttp

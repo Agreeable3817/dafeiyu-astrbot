@@ -1,0 +1,74 @@
+name: dafeiyu-macos-m2
+services:
+  astrbot:
+    image: ${DAFEIYU_IMAGE:-dafeiyu-macos:20261108}
+    platform: linux/arm64
+    build:
+      context: .runtime/build
+      dockerfile: ../../Dockerfile
+      args:
+        ASTRBOT_BASE: soulter/astrbot@sha256:66ae67e93be2996f9aaef29d90f659c0b7f1d245a45cda8bea40ebdd0f34d943
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 90s
+    mem_limit: ${ASTRBOT_MEMORY:-1536m}
+    mem_reservation: 768m
+    memswap_limit: ${ASTRBOT_MEMORY:-1536m}
+    cpus: ${ASTRBOT_CPUS:-1.0}
+    pids_limit: 256
+    environment:
+      TZ: Asia/Shanghai
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      NUMEXPR_NUM_THREADS: '1'
+      MALLOC_ARENA_MAX: '2'
+      IMAGEIO_FFMPEG_EXE: /usr/bin/ffmpeg
+    ports:
+      - "127.0.0.1:${ASTRBOT_PORT:-16185}:6185"
+    volumes:
+      - ./.runtime/data/astrbot:/AstrBot/data
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6185/', timeout=5).close()"]
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  napcat:
+    image: mlikiowa/napcat-docker@sha256:5973e8f1b16c0c42cb72bb9db99d93d8143012dcdc1dd6f91257b48054eb302f
+    platform: linux/arm64
+    hostname: dafeiyu-m2
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 90s
+    mem_limit: ${NAPCAT_MEMORY:-1280m}
+    mem_reservation: 512m
+    memswap_limit: ${NAPCAT_MEMORY:-1280m}
+    cpus: ${NAPCAT_CPUS:-1.0}
+    pids_limit: 512
+    shm_size: 128m
+    ulimits:
+      core: 0
+    environment:
+      TZ: Asia/Shanghai
+      NAPCAT_ENABLE_COREDUMP: '0'
+      ACCOUNT: ${BOT_QQ:-}
+      NAPCAT_QUICK_ACCOUNT: ${BOT_QQ:-}
+    ports:
+      - "127.0.0.1:${NAPCAT_PORT:-16099}:6099"
+    volumes:
+      - ./.runtime/data/napcat/config:/app/napcat/config
+      - ./.runtime/data/napcat/qq:/app/.config/QQ
+      - ./.runtime/data/napcat/plugins:/app/napcat/plugins
+    healthcheck:
+      test: [CMD, curl, -fsS, --max-time, '5', -o, /dev/null, 'http://127.0.0.1:6099/webui']
+      interval: 60s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    logging: *logging
